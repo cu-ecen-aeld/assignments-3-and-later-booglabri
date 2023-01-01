@@ -48,11 +48,11 @@ then
 		exit 1
 	fi
 fi
-echo "Removing the old writer utility and compiling as a native application"
-cp -p ../assignments/assignment2/makefile .
-cp -p ../assignments/assignment2/writer.c .
-make clean
-make
+#echo "Removing the old writer utility and compiling as a native application"
+#cp -p ../assignments/assignment2/makefile .
+#cp -p ../assignments/assignment2/writer.c .
+#make clean
+#make
 
 for i in $( seq 1 $NUMFILES)
 do
