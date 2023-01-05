@@ -1,4 +1,11 @@
 #include "systemcalls.h"
+#define _XOPEN_SOURCE
+#include <stdlib.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -16,9 +23,19 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
+    int ret;
+
+    printf("  system() TheCmd: %s\n", cmd);
+    
+    ret = system(cmd);
+    if (WIFSIGNALED(ret) &&
+	(WTERMSIG(ret) == SIGINT ||
+	 WTERMSIG(ret) == SIGQUIT))
+	return false;
 
     return true;
 }
+
 
 /**
 * @param count -The numbers of variables passed to the function. The variables are command to execute.
@@ -36,6 +53,9 @@ bool do_system(const char *cmd)
 
 bool do_exec(int count, ...)
 {
+    int status;
+    pid_t pid;
+    
     va_list args;
     va_start(args, count);
     char * command[count+1];
@@ -47,7 +67,7 @@ bool do_exec(int count, ...)
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
+    //command[count] = command[count];
 
 /*
  * TODO:
@@ -58,7 +78,27 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    printf("  do_exec() TheCmd: ");
+    for(i=0; i<count; i++)
+	printf("%s ",command[i]);
+    printf("\n");
 
+    pid = fork();
+    if (pid == -1)
+	return false;
+    else if (pid == 0) {
+	if (execv(command[0], command) == -1)
+	    return false;
+	exit(-1);
+    }
+
+    if (waitpid(pid, &status, 0) == -1)
+	return false;
+    else if (WIFEXITED(status)) {
+	printf("a:%d, b:%d\n", WIFEXITED(status), WEXITSTATUS(status));
+	if (WEXITSTATUS(status))
+	    return false;
+    }
     va_end(args);
 
     return true;
@@ -71,6 +111,10 @@ bool do_exec(int count, ...)
 */
 bool do_exec_redirect(const char *outputfile, int count, ...)
 {
+    int status;
+    pid_t pid;
+    int fd;
+    
     va_list args;
     va_start(args, count);
     char * command[count+1];
@@ -82,8 +126,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
-
+    //command[count] = command[count];
 
 /*
  * TODO
@@ -92,6 +135,35 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
+
+    printf("   do_exec_redirect() TheCmd: ");
+    for(i=0; i<count; i++)
+	printf("%s ",command[i]);
+    printf("\n");
+
+    fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    if (fd < 0)
+	return false;
+
+    pid = fork();
+    if (pid == -1)
+	return false;
+    else if (pid == 0) {
+	if (dup2(fd, 1) < 0)
+	    return false;
+	close(fd);
+	if (execv(command[0], command) == -1)
+	    return false;
+	exit(-1);
+    }
+
+    close(fd);
+
+    if (waitpid(pid, &status, 0) == -1)
+	return false;
+    else if (WIFEXITED(status))
+	if (WEXITSTATUS(status))
+	    return false;
 
     va_end(args);
 
