@@ -24,9 +24,9 @@ bool do_system(const char *cmd)
  *   or false() if it returned a failure
 */
     int ret;
-
+    /*
     printf("  system() TheCmd: %s\n", cmd);
-    
+    */
     ret = system(cmd);
     if (WIFSIGNALED(ret) &&
 	(WTERMSIG(ret) == SIGINT ||
@@ -78,11 +78,12 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    /* 
     printf("  do_exec() TheCmd: ");
     for(i=0; i<count; i++)
 	printf("%s ",command[i]);
     printf("\n");
-
+    */
     pid = fork();
     if (pid == -1)
 	return false;
@@ -94,11 +95,10 @@ bool do_exec(int count, ...)
 
     if (waitpid(pid, &status, 0) == -1)
 	return false;
-    else if (WIFEXITED(status)) {
-	printf("a:%d, b:%d\n", WIFEXITED(status), WEXITSTATUS(status));
+    else if (WIFEXITED(status))
 	if (WEXITSTATUS(status))
 	    return false;
-    }
+
     va_end(args);
 
     return true;
@@ -135,12 +135,12 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
-
+    /*
     printf("   do_exec_redirect() TheCmd: ");
     for(i=0; i<count; i++)
 	printf("%s ",command[i]);
     printf("\n");
-
+    */
     fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
     if (fd < 0)
 	return false;
