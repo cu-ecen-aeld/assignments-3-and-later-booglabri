@@ -83,23 +83,15 @@ bool do_exec(int count, ...)
     if (pid == -1)
 	return false;
     else if (pid == 0) {
-	if (execv(command[0], command) == -1)
-	    return false;
+	execv(command[0], command);
 	exit(-1);
     }
 
     if (waitpid(pid, &status, 0) == -1)
 	return false;
-    else {
-	printf("  do_exec() TheCmd: ");
-	for(i=0; i<count; i++)
-	    printf("%s ",command[i]);
-	printf("\n");
-	printf("a:%d, b:%d\n", WIFEXITED(status), WEXITSTATUS(status));
-	if (WIFEXITED(status))
+    else if (WIFEXITED(status))
    	    if (WEXITSTATUS(status))
 		return false;
-    }
     
     va_end(args);
 
@@ -149,8 +141,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 	if (dup2(fd, 1) < 0)
 	    return false;
 	close(fd);
-	if (execv(command[0], command) == -1)
-	    return false;
+	execv(command[0], command);
 	exit(-1);
     }
 
@@ -158,16 +149,9 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 
     if (waitpid(pid, &status, 0) == -1)
 	return false;
-    else {
-	printf("   do_exec_redirect() TheCmd: ");
-	for(i=0; i<count; i++)
-	    printf("%s ",command[i]);
-	printf("> %s\n", outputfile);
-	printf("a:%d, b:%d\n", WIFEXITED(status), WEXITSTATUS(status));
-	if (WIFEXITED(status))
+    else if (WIFEXITED(status))
    	    if (WEXITSTATUS(status))
 		return false;
-    }
 
     va_end(args);
 
