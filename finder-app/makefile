@@ -1,4 +1,4 @@
-CC=$(CROSS-COMPILE)gcc
+CC=$(CROSS_COMPILE)gcc
 CFLAGS=-I.
 DEPS=
 OBJ=writer.o
