@@ -9,6 +9,8 @@ OBJ=writer.o
 writer: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)
 
+all: writer
+
 .PHONY: clean
 
 clean: 
