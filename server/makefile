@@ -14,8 +14,10 @@ showip: showip.o
 
 all: aesdsocket
 
-.PHONY: clean
+.PHONY: clean cleanall
 
 clean:
 	rm -f aesdsocket.o aesdsocket
+
+cleanall: clean
 	rm -f showip.o showip
