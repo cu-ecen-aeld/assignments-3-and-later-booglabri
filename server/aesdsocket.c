@@ -1,20 +1,20 @@
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <syslog.h>
 #include <signal.h>
 
-//#define DEBUG(msg, ...)
-#define DEBUG(msg, ...) fprintf(stderr, "DEBUG: " msg, ##__VA_ARGS__)
+#define DEBUG(msg, ...)
+//#define DEBUG(msg, ...) fprintf(stderr, "DEBUG: " msg, ##__VA_ARGS__)
 
 #define PORT "9000"
 #define BACKLOG 5
@@ -96,6 +96,16 @@ int main(int argc, char *argv[])
     if (bind(sockfd, res->ai_addr, res->ai_addrlen) == -1) {
 	perror("bind");
 	exit(-1);
+    }
+
+    // Switch to daemon mode if argument -d is passed
+    DEBUG("argc: %d argv[1]: %s\n", argc, argv[1]);
+    if (argc == 2 && strncmp(argv[1], "-d", 2) == 0) {
+	DEBUG("daemon mode\n");
+	if (daemon(0, 0) == -1) {
+	    perror("daemon");
+	    exit(-1);
+	}
     }
 
     // Listen for client connection request
