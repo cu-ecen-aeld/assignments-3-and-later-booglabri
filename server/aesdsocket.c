@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <netdb.h>
 #include <syslog.h>
+#include <signal.h>
 
 //#define DEBUG(msg, ...)
 #define DEBUG(msg, ...) fprintf(stderr, "DEBUG: " msg, ##__VA_ARGS__)
@@ -18,7 +19,14 @@
 #define PORT "9000"
 #define BACKLOG 5
 #define DATAFILE "/var/tmp/aesdsocketdata"
-#define BUFSIZE 5
+#define BUFSIZE 1024
+
+bool sigcaught = false;
+
+void signal_handler(int signo)
+{
+    if (signo == SIGINT || signo == SIGTERM) sigcaught = true;
+}
 
 int main(int argc, char *argv[])
 {
@@ -31,9 +39,21 @@ int main(int argc, char *argv[])
     int status;
     int yes=1;
     char client_ipstr[INET_ADDRSTRLEN];
-    char *buf, *buf2, *bufa, *bufb, *startline, *endline, *rbuf;
-    bool bflag;
-    ssize_t len, cnt, cnt2;
+    char *buf, *rbuf;
+    ssize_t len, cnt;
+    struct sigaction act;
+
+    // Setup up signal handling
+    memset(&act, 0, sizeof(struct sigaction));
+    act.sa_handler = signal_handler;
+    if (sigaction(SIGINT, &act, NULL) == -1) {
+	perror("sigaction SIGINT");
+	exit(-1);
+    }
+    if (sigaction(SIGTERM, &act, NULL) == -1) {
+	perror("sigaction SIGTERM");
+	exit(-1);
+    }
 
     // Open syslog
     openlog(argv[0], LOG_CONS | LOG_PERROR | LOG_PID | LOG_NDELAY, LOG_USER);
@@ -85,11 +105,12 @@ int main(int argc, char *argv[])
     }
 
     // Loop listening for clients unti SIGINT or SIGTERM is received
-    while (1) {
-	
+    while(true) {
+
         // Accept connection from client
-        client_addrsize = sizeof client_addr;
+	client_addrsize = sizeof client_addr;
         if ((clientfd = accept(sockfd, (struct sockaddr *)&client_addr, &client_addrsize)) == -1) {
+	    if (sigcaught) goto CLEANUP;
 	    perror("accept");
 	    exit(-1);
         }
@@ -103,71 +124,58 @@ int main(int argc, char *argv[])
 
         // Open data file, create if does not exist
         flags = O_RDWR | O_APPEND;
-        if (access(DATAFILE, F_OK) != 0) flags |= O_CREAT;
+        if (access(DATAFILE, F_OK) != 0)	DEBUG("Before accept: %d\n", sigcaught);
+ flags |= O_CREAT;
         if ((fd = open(DATAFILE, flags, 0644)) == -1) {
 	    perror("open");
 	    exit(-1);
         }
-    	
-        // Read incoming socket data stream, write to data file and return response to outgoing data stream
-        bufa = (char *)malloc(BUFSIZE+1);
-        bufb = (char *)malloc(BUFSIZE+1);
+
+	// Allocate buffers
+        buf = (char *)malloc(BUFSIZE+1);
         rbuf = (char *)malloc(BUFSIZE+1);
-        bflag = true;
-        buf2 = bufb;
-        buf2[0] = '\0';
+
+        // Read incoming socket data stream, write to data file and return response to outgoing data stream
         do {
-	    if (bflag) {
-		buf = bufa;
-		bflag = false;
-	    } else {
-		buf = bufb;
-		bflag = true;
-	    }
+	    // read incoming socket data stream
 	    if ((len = recv(clientfd, (void *)buf, BUFSIZE, 0)) == -1) {
 		perror("recv");
 		exit(-1);
 	    }
+
+	    // write to data file
 	    buf[len] = '\0';
-	    DEBUG("len: %d\n", (int)len);
-	    DEBUG("buf: |%s|\n", buf);
-	    startline = buf;
-	    if (len > 0) {
-		while ((endline = index(startline, '\n')) != 0) {
-		    cnt = endline - startline + 1;
-		    cnt2 = index(buf2, '\0') - buf2;
-		    DEBUG("[%ld] startline: %p -> 0x%02x (%c) endline: %p -> 0x%02x\n",
-			  cnt, startline, *startline, *startline, endline, *endline);
-		    if ((write(fd, buf2, cnt2)) != cnt2) {
-			perror("write");
-			exit(-1);
-		    }
-		    if ((write(fd, startline, cnt)) != cnt) {
-			perror("write");
-			exit(-1);
-		    }
-		    startline = endline + 1;
-		}
-		buf2 = startline;
+	    DEBUG("recv len: %d  buf: |%s|\n", (int)len, buf);
+	    if ((write(fd, buf, len)) != len) {
+		perror("write");
+		exit(-1);
+	    }
+
+	    // data packet found
+	    if (index(buf, '\n') != 0) {
+		
+		// seek to beginning of file
 		if (lseek(fd, 0, SEEK_SET) == (off_t)-1) {
 		    perror("lseek");
 		    exit(-1);
 		}
+		
+		// return file contents in outgoing data stream
 		while ((cnt = read(fd, rbuf, BUFSIZE)) != 0) {
-		    if ((send(clientfd, (void *)rbuf, cnt, 0)) == -1) {
+		    rbuf[cnt] = '\0';
+		    DEBUG("send cnt: %d rbuf: |%s|\n", (int)cnt, rbuf);
+		    if ((cnt = send(clientfd, (void *)rbuf, cnt, 0)) == -1) {
 			perror("send");
 			exit(-1);
 		    }
+		    DEBUG("sent cnt: %d\n", (int)cnt);
 		}
-		//char tbuf[2] = "\n\0";
-		//if ((send(clientfd, (void *)tbuf, 2, 0)) == -1) {
-		//    perror("send");
-		//    exit(-1);
-		//}
 	    }
-        } while (len > 0);
-        free(bufa);
-        free(bufb);
+
+	} while (len > 0); // socket data stream closed
+
+	// Free buffers
+        free(buf);
         free(rbuf);
 
         // Close data file
@@ -183,7 +191,20 @@ int main(int argc, char *argv[])
         syslog(LOG_INFO, "Closed connection from %s\n", client_ipstr);
 
     } // End of client loop
-    
+
+ CLEANUP:
+
+    // Handle exceptions SIGINT and SIGTERM
+    if (sigcaught) {
+	syslog(LOG_INFO, "Caught signal, exiting");
+	if (access(DATAFILE, F_OK) == 0) {
+	    if (remove(DATAFILE) == -1) {
+		perror("remove");
+		exit(-1);
+	    }
+	}
+    }
+
     // Shutdown network connection
     if (shutdown(sockfd, SHUT_RDWR) == -1) {
 	perror("shutdown");
