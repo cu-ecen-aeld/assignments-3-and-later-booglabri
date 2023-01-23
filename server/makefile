@@ -1,6 +1,6 @@
 CC=$(CROSS_COMPILE)gcc
-CFLAGS=-I. -Wall -Werror
-LDFLAGS=
+CFLAGS=-I. -Wall -Werror -pthread
+LDFLAGS= -pthread
 DEPS=
 
 %.o: %.c $(DEPS)

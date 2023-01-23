@@ -7,6 +7,6 @@ crosstool-ng
 aesd-build
 .vscode/
 test.sh.log
-testfile.txt
-valgrind-out.txt
-actions-runner
+aesdsocket
+server/aesdsocket
+server/valgrind-out.txt
