@@ -19,24 +19,8 @@ case "$1" in
     echo "Stopping aesdsocket"
     start-stop-daemon -K  -n aesdsocket
     ;;
-  restart)
-    echo "Restarting aesdsocket"
-    start-stop-daemon -K -n aesdsocket
-    start-stop-daemon -S -n aesdsocket -a /usr/bin/aesdsocket -- -d
-    ;;
-  force-reload)
-    ;;
-  status)
-    echo -n "Status of aesdsocket "
-    start-stop-daemon -T -n aesdsocket
-    if [ "$?" -eq 0 ]; then
-	echo "running"
-    else
-	echo "stopped"
-    fi
-    ;;
   *)
-    echo "Usage: $0 {start|stop|restart|status}"
+    echo "Usage: $0 {start|stop}"
     exit 1
 esac
 

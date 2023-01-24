@@ -61,7 +61,8 @@ void *clientthread(void *clientfdptr)
     if (access(DATAFILE, F_OK) != 0) flags |= O_CREAT;
     if ((fd = open(DATAFILE, flags, 0644)) == -1) {
 	    perror("open");
-	    pthread_exit((void *)-1);
+	    //pthread_exit((void *)-1);
+	    return (void *)-1;
     }
 
 	// Allocate buffers
@@ -73,7 +74,8 @@ void *clientthread(void *clientfdptr)
 	// read incoming socket data stream
 	if ((len = recv(clientfd, (void *)buf, BUFSIZE, 0)) == -1) {
 	    perror("recv");
-	    pthread_exit((void *)-1);
+	    //pthread_exit((void *)-1);
+	    return (void *)-1;
 	}
 	
 	// write to data file
@@ -81,7 +83,8 @@ void *clientthread(void *clientfdptr)
 	DEBUG("recv len: %d  buf: |%s|\n", (int)len, buf);
 	if ((write(fd, buf, len)) != len) {
 	    perror("write");
-	    pthread_exit((void *)-1);
+	    //pthread_exit((void *)-1);
+	    return (void *)-1;
 	}
 
 	// data packet found
@@ -90,7 +93,8 @@ void *clientthread(void *clientfdptr)
 	    // seek to beginning of file
 	    if (lseek(fd, 0, SEEK_SET) == (off_t)-1) {
 		perror("lseek");
-		pthread_exit((void *)-1);
+		//pthread_exit((void *)-1);
+		return (void *)-1;
 	    }
 		
 	    // return file contents in outgoing data stream
@@ -99,7 +103,8 @@ void *clientthread(void *clientfdptr)
 		DEBUG("send cnt: %d rbuf: |%s|\n", (int)cnt, rbuf);
 		if ((cnt = send(clientfd, (void *)rbuf, cnt, 0)) == -1) {
 		    perror("send");
-		    pthread_exit((void *)-1);
+		    //pthread_exit((void *)-1);
+		    return (void *)-1;
 		}
 		DEBUG("sent cnt: %d\n", (int)cnt);
 	    }
@@ -123,7 +128,8 @@ void *clientthread(void *clientfdptr)
     }
     */
     // Exit thread with success
-    pthread_exit((void *)0);
+    //pthread_exit((void *)0);
+    return (void *)0;
 }
 
 //===================================================================
