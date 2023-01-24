@@ -15,8 +15,8 @@
 #include <pthread.h>
 #include <error.h>
 
-//#define DEBUG(msg, ...)
-#define DEBUG(msg, ...) fprintf(stderr, "DEBUG: " msg, ##__VA_ARGS__)
+#define DEBUG(msg, ...)
+//#define DEBUG(msg, ...) fprintf(stderr, "DEBUG: " msg, ##__VA_ARGS__)
 
 #define PORT "9000"
 #define BACKLOG 5
