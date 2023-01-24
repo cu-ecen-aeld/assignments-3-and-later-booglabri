@@ -45,7 +45,17 @@ void *clientthread(void *clientfdptr)
     char *buf, *rbuf;
     ssize_t len, cnt;
     int clientfd = *(int*)clientfdptr;
+    //pthread_mutex_t mutex;
+    //int ret;
 
+    // Acquire mutex lock to guard simultaneous file I/O
+    /*
+    ret = pthread_mutex_lock(&mutex);
+    DEBUG("pthread_mutex_lock return: %d\n", ret);
+    if (ret != 0) {
+	error(-1, ret, "pthread_mutex_lock");
+    }
+    */
     // Open data file, create if does not exist
     flags = O_RDWR | O_APPEND;
     if (access(DATAFILE, F_OK) != 0) flags |= O_CREAT;
@@ -104,6 +114,15 @@ void *clientthread(void *clientfdptr)
     // Close data file
     close(fd);
 
+    // Release mutex lock
+    /*
+    ret = pthread_mutex_unlock(&mutex);
+    DEBUG("pthread_mutex_unlock return: %d\n", ret);
+    if (ret != 0) {
+	error(-1, ret, "pthread_mutex_unlock");
+    }
+    */
+    // Exit thread with success
     pthread_exit((void *)0);
 }
 

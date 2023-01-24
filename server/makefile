@@ -1,9 +1,14 @@
-CC=$(CROSS_COMPILE)gcc
-CFLAGS=-I. -Wall -Werror -pthread
-LDFLAGS= -pthread
-DEPS=
+ifeq ($(CC),)
+	CC=$(CROSS_COMPILE)gcc
+endif
+ifeq ($(CFLAGS),)
+	CFLAGS=-I. -Wall -Werror -pthread
+endif
+ifeq ($(LDFLAGS),)
+	LDFLAGS= -pthread
+endif
 
-%.o: %.c $(DEPS)
+%.o: %.c %.h
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 aesdsocket: aesdsocket.o
