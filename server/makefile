@@ -2,27 +2,31 @@ ifeq ($(CC),)
 	CC=$(CROSS_COMPILE)gcc
 endif
 ifeq ($(CFLAGS),)
-	CFLAGS=-I. -Wall -Werror -pthread
+	CFLAGS=-I. -Wall -Werror -g -O0
 endif
 ifeq ($(LDFLAGS),)
-	LDFLAGS= -pthread
+	LDFLAGS=-pthread
 endif
 
-%.o: %.c %.h
-	$(CC) -c -o $@ $< $(CFLAGS)
+DEPS=aesdsocket.h
+OBJS=aesdsocket.o clientthread.o
+TARGET=aesdsocket
 
-aesdsocket: aesdsocket.o
+%.o: %.c $(DEPS)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 showip: showip.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-all: aesdsocket
+all: $(TARGET)
 
 .PHONY: clean cleanall
 
 clean:
-	rm -f aesdsocket.o aesdsocket
+	rm -f $(OBJS) $(TARGET)
 
 cleanall: clean
 	rm -f showip.o showip
