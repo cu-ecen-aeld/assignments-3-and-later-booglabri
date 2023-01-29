@@ -1,8 +1,8 @@
 #include "aesdsocket.h"
 
 // Debug macros
-//#define DEBUG(msg, ...)
-#define DEBUG(msg, ...) fprintf(stderr, "DEBUG: " msg, ##__VA_ARGS__)
+#define DEBUG(msg, ...)
+//#define DEBUG(msg, ...) fprintf(stderr, "DEBUG: " msg, ##__VA_ARGS__)
 
 //===================================================================
 // Singly link list entry structure
