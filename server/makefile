@@ -2,7 +2,8 @@ ifeq ($(CC),)
 	CC=$(CROSS_COMPILE)gcc
 endif
 ifeq ($(CFLAGS),)
-	CFLAGS=-I. -Wall -Werror -g -O0
+	CFLAGS=-I. -Wall -Werror
+	#CFLAGS=-I. -Wall -Werror -g -O0
 endif
 ifeq ($(LDFLAGS),)
 	LDFLAGS=-pthread

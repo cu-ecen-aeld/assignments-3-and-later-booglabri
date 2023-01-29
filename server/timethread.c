@@ -10,13 +10,13 @@
 
 void *timethread(void *thread_param)
 {
-    int fd, status;
+    int fd = 0, status;
     struct ts_data *thread_args = (struct ts_data *)thread_param;
 
     // Acquire mutex lock to guard simultaneous file I/O
     if ((status = pthread_mutex_lock(thread_args->mutex)) != 0) {
-	fprintf(stderr, "pthread_mutex_lock: %s\n", strerror(status));
-	goto EXIT;
+        fprintf(stderr, "pthread_mutex_lock: %s\n", strerror(status));
+        goto EXIT;
     }
 
     // Set thread ID
@@ -24,33 +24,27 @@ void *timethread(void *thread_param)
 
     // Open data file, create if does not exist
     if (access(DATAFILE, F_OK) == 0) {
-	if ((fd = open(DATAFILE, O_WRONLY | O_APPEND, 0644)) == -1) {
-	    perror("open");
-	    goto EXIT;
-	}
+        if ((fd = open(DATAFILE, O_WRONLY | O_APPEND, 0644)) == -1) {
+            perror("open");
+            goto EXIT;
+        }
     } else {
-	goto EXIT;
+        goto EXIT;
     }
 
     // write timestamp to file
-    if ((write(fd, thread_args->timestr, sizeof(thread_args->timestr))) != sizeof(thread_args->timestr)) {
-	perror("write");
-	goto EXIT;
-    }
-
-    // write newline to file
-    if ((write(fd, "\n", 1)) != 1) {
-	perror("write");
-	goto EXIT;
+    if ((write(fd, thread_args->timestr, strlen(thread_args->timestr))) != strlen(thread_args->timestr)) {
+        perror("write");
+        goto EXIT;
     }
 
  EXIT:
     // Close data file
-    close(fd);
+    if (fd > 0) close(fd);
 
     // Release mutex lock
     if ((status = pthread_mutex_unlock(thread_args->mutex)) != 0) {
-	fprintf(stderr, "pthread_mutex_unlock: %s\n", strerror(status));
+        fprintf(stderr, "pthread_mutex_unlock: %s\n", strerror(status));
 	goto EXIT;
     }
 
