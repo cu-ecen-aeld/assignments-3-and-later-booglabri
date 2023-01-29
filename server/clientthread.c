@@ -81,9 +81,13 @@ void *clientthread(void *thread_param)
 	
     } while (len > 0); // socket data stream closed
 
+    // Set thread complete success
+    thread_args->thread_complete_success = true;
+
+ EXIT:
     // Free buffers
-    free(buf);
-    free(rbuf);
+    if (!NULL) free(buf);
+    if (!NULL) free(rbuf);
 
     // Close data file
     close(fd);
@@ -93,14 +97,6 @@ void *clientthread(void *thread_param)
 	fprintf(stderr, "pthread_mutex_unlock: %s\n", strerror(status));
 	goto EXIT;
     }
-
-    // Set thread complete success
-    thread_args->thread_complete_success = true;
-
- EXIT:
-    // Free heap memory, if needed
-    if (!buf) free(buf);
-    if (!rbuf) free(rbuf);
 
     // Exit thread
     return thread_param;

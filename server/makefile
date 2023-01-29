@@ -9,7 +9,7 @@ ifeq ($(LDFLAGS),)
 endif
 
 DEPS=aesdsocket.h
-OBJS=aesdsocket.o clientthread.o
+OBJS=aesdsocket.o clientthread.o timethread.o
 TARGET=aesdsocket
 
 %.o: %.c $(DEPS)

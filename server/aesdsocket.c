@@ -42,7 +42,14 @@ int main(int argc, char *argv[])
     struct slisthead head;
     struct entry *node;
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_t tsthread;
     struct pollfd ufds[1];
+    time_t t;
+    struct tm *ts;
+    struct ts_data timestamp;
+
+    // Assign mutex to timestamp data structure
+    timestamp.mutex = &mutex;
     
     // Initialize the thread queue
     SLIST_INIT(&head);
@@ -138,9 +145,35 @@ int main(int argc, char *argv[])
 	    exit(EXIT_FAILURE);
 	} else if (status == 0) {
 	    tcnt = (tcnt + 1) % DELAYSECS;
+
+	    // Get timestamp
+	    if (tcnt == 0) {
+		t = time(NULL);
+		if ((ts = localtime(&t)) == NULL) {
+		    perror("localtime");
+		    exit(EXIT_FAILURE);
+		}
+		if (strftime(timestamp.timestr, sizeof(timestamp.timestr), "timestamp: %a, %d %b %Y %T %z", ts) == 0) {
+		    fprintf(stderr, "strftime returned 0");
+		    exit(EXIT_FAILURE);
+		}
+		DEBUG("%s\n", timestamp.timestr);
+	    
+		// Create and spawn timestamp thread
+		if ((status = pthread_create(&tsthread, NULL, timethread, (void *)&timestamp)) != 0) {
+		    fprintf(stderr, "pthread_create: %s\n", strerror(status));
+		    exit(EXIT_FAILURE);
+		}
+
+		// Join threads that have exited
+		if ((status = pthread_join(tsthread, NULL)) != 0) {
+		    fprintf(stderr, "pthread_join: %s\n", strerror(status));
+		    exit(EXIT_FAILURE);
+		}
+	    }
 	}
 	DEBUG("Poll result: %d  tcnt: %d\n", status, tcnt);
-	
+
         // Accept connection from client
 	client_addrsize = sizeof client_addr;
         if ((clientfd = accept(sockfd, (struct sockaddr *)&client_addr, &client_addrsize)) == -1) {

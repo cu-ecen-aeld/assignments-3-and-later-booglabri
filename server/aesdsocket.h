@@ -20,13 +20,22 @@
 #include <signal.h>
 #include <pthread.h>
 #include <errno.h>
+#include <time.h>
 
 // Parameters
 #define PORT "9000"
 #define BACKLOG 5
 #define DATAFILE "/var/tmp/aesdsocketdata"
 #define BUFSIZE 1024
+#define TSBUFSIZE 50
 #define DELAYSECS 10
+
+// Timestamp thread data structure
+struct ts_data {
+    char timestr[TSBUFSIZE];
+    pthread_mutex_t *mutex;
+    pthread_t tid;
+};
 
 // Thread data structure
 struct thread_data {
@@ -41,5 +50,8 @@ struct thread_data {
 
 // Client thread
 void *clientthread(void *thread_param);
+
+// Timestamp thread
+void *timethread(void *timestamp);
 
 #endif
