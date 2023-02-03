@@ -18,11 +18,6 @@
 
 #define INCOFFS(off) (off +  1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED
 
-// Debug macros
-#include <stdio.h>
-//#define DEBUG(msg, ...)
-#define DEBUG(msg, ...) fprintf(stderr, "DEBUG: " msg, ##__VA_ARGS__)
-
 /**
  * @param buffer the buffer to search for corresponding offset.  Any necessary locking must be performed by caller.
  * @param char_offset the position to search for in the buffer list, describing the zero referenced
@@ -43,15 +38,12 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
     int i = buffer->out_offs;
     int c = 0;
     
-    DEBUG("in: %d  char_offset: %ld\n", buffer->out_offs, char_offset);
     while (accum_offset <= char_offset) {
         accum_offset += buffer->entry[i].size;
-        DEBUG("%d %ld %ld %ld %d\n",i,accum_offset,char_offset,accum_offset - char_offset, c);
         if (char_offset >= accum_offset)
             i = INCOFFS(i);
         c++;
     }
-    DEBUG("out: %d %ld %ld %ld %d\n\n",i,accum_offset,char_offset,char_offset - (accum_offset - buffer->entry[i].size), c);
 
     if (c > AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
         return NULL;
@@ -72,13 +64,10 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
     /**
     * TODO: implement per description
     */
-    DEBUG("insert: %d %d %d -> ", buffer->in_offs, buffer->out_offs, buffer->full);
     if (buffer->full) buffer->out_offs = INCOFFS(buffer->out_offs);
     buffer->entry[buffer->in_offs] = *add_entry;
-    DEBUG("|%s|",buffer->entry[buffer->in_offs].buffptr);
     if ((buffer->in_offs = INCOFFS(buffer->in_offs)) == buffer->out_offs) buffer->full = true;
     else buffer->full = false;
-    DEBUG("%d %d %d\n", buffer->in_offs, buffer->out_offs, buffer->full);
 }
 
 /**
